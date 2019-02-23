@@ -3,11 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-interface Node
-{
-   bool Invoke();
-}
-
 
 
 enum PlayerState
@@ -17,16 +12,20 @@ enum PlayerState
     IDLE
 }
 
-
 delegate void Action();
+delegate void 행동(bool isDown);
 
 public class PlayerController : MonoBehaviour
 {
+    public Vector2 speed;
+
+
     new Rigidbody2D rigidbody;
     new BoxCollider2D collider;
     SpriteRenderer spriteRenderer;
     Animator animator;
-    public Vector2 speed;
+
+    Vector2 moveForce;
 
     //레이어
     public LayerMask groundLayer;
@@ -36,23 +35,25 @@ public class PlayerController : MonoBehaviour
     //이동
     Vector2 moveDirection;
 
-    Dictionary<string, Action> KeyDownAction;
-    Dictionary<KeyCode, Action> KeyUpAction;
+    Dictionary<KeyCode, 행동> KeyDownAction;
+    Dictionary<KeyCode, 행동> KeyUpAction;
+
+    //Dictionary<string, Action> KeyDownAction;
+    //Dictionary<KeyCode, Action> KeyUpAction;
 
     private void Awake()
     {
-        KeyDownAction = new Dictionary<string, Action>();
-        KeyUpAction = new Dictionary<KeyCode, Action>();
 
-        KeyDownAction[" "] = Jump;
-        KeyDownAction["a"] = MoveLeft;
-        KeyDownAction["d"] = MoveRight;
+        KeyDownAction = new Dictionary<KeyCode, 행동>();
+        KeyUpAction = new Dictionary<KeyCode, 행동>();
+
+        KeyDownAction[KeyCode.Space] = Jump;
+        KeyDownAction[KeyCode.LeftArrow] = RunLeft;
+        KeyDownAction[KeyCode.RightArrow] = RunRight;
 
 
-
-        KeyUpAction[KeyCode.A] = Idle;
-        KeyUpAction[KeyCode.D] = Idle;
-
+        KeyUpAction[KeyCode.LeftArrow] = RunLeft;
+        KeyUpAction[KeyCode.RightArrow] = RunRight;
 
     }
 
@@ -70,72 +71,76 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         InputHandle();
-        HandleState();
+
+
+        transform.Translate(moveForce * Time.deltaTime);
     }
 
-    private void HandleState()
-    {
-        if(state ==  PlayerState.JUMP)
-        {
-            if (IsGrounded())
-            {
-                state = PlayerState.IDLE;
-                animator.SetBool("isJump", false);
-            }
-        }
-        else if(state == PlayerState.RUN)
-        {
-            Vector2 movement = moveDirection * Time.deltaTime * speed.x;
-            Debug.Log(movement);
-            animator.SetFloat("runSpeed", Mathf.Abs(movement.x));
-            transform.Translate(movement);
-        }
-        else if(state == PlayerState.IDLE)
-        {
-            animator.SetFloat("runSpeed", 0);
-        }
-    }
     private void InputHandle()
     {
-        if(Input.anyKeyDown&&KeyDownAction.ContainsKey(Input.inputString))
+       if(Input.GetKeyDown(KeyCode.Space))
+       {
+            KeyDownAction[KeyCode.Space](true);
+       }
+       if (Input.GetKeyDown(KeyCode.LeftArrow))
+       {
+           KeyDownAction[KeyCode.LeftArrow](true);
+       }
+       if (Input.GetKeyDown(KeyCode.RightArrow))
+       {
+           KeyDownAction[KeyCode.RightArrow](true);
+       }
+
+       if(Input.GetKeyUp(KeyCode.RightArrow))
         {
-            KeyDownAction[Input.inputString]();
+            KeyUpAction[KeyCode.RightArrow](false);
         }
-        foreach (var command in KeyUpAction)
+        if (Input.GetKeyUp(KeyCode.LeftArrow))
         {
-            if (Input.GetKeyUp(command.Key))
-            {
-                command.Value();
-            }
+            KeyUpAction[KeyCode.LeftArrow](false);
+        }
+
+
+
+    }
+
+    void Jump(bool isDown)
+    {
+        Vector2 jumpForce = new Vector2(0, speed.y);
+        rigidbody.AddForce(jumpForce, ForceMode2D.Impulse);
+        state = PlayerState.JUMP;
+        animator.SetBool("isJump", true);
+
+    }
+    void RunLeft(bool isDown)
+    {
+        if (isDown)
+        {
+            moveForce = new Vector2(-speed.x, 0);
+            spriteRenderer.flipX = true;
+            animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+        }
+        else
+        {
+            moveForce = new Vector2(0, 0);
+            animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+        }
+    }
+    void RunRight(bool isDown)
+    {
+        if (isDown)
+        {
+            moveForce = new Vector2(speed.x, 0);
+            spriteRenderer.flipX = false;
+            animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+        }
+        else
+        {
+            moveForce = new Vector2(0, 0);
+            animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
         }
     }
 
-    public void Jump()
-    {
-        if (state != PlayerState.JUMP)
-        {
-            Vector2 jumpForce = new Vector2(0, speed.y);
-            rigidbody.AddForce(jumpForce, ForceMode2D.Impulse);
-            state = PlayerState.JUMP;
-            animator.SetBool("isJump", true);
-        }
-    }
-    public void Idle()
-    {
-        state = PlayerState.IDLE;
-    }
-    public void MoveLeft()
-    {
-        state = PlayerState.RUN;
-        spriteRenderer.flipX = true;
-        moveDirection = Vector2.left;
-    }
-    public void MoveRight()
-    {
-        state = PlayerState.RUN;
-        spriteRenderer.flipX = false;
-        moveDirection = Vector2.right;
-    }
 
 
     bool IsGrounded()
@@ -143,6 +148,3 @@ public class PlayerController : MonoBehaviour
         return collider.IsTouchingLayers(groundLayer)&&rigidbody.velocity.y<=0;
     }
 }
-
-
-
