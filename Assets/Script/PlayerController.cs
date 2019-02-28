@@ -8,7 +8,8 @@ using UnityEngine;
 enum PlayerState
 {
     JUMP,
-    RUN
+    LEFTRUN,
+    RIGHTRUN
 }
 
 
@@ -32,12 +33,14 @@ public class PlayerController : MonoBehaviour
 
     //플레이어 상태
     Dictionary<PlayerState, bool> state;
+
+   
+
     //이동
     Vector2 moveDirection;
 
     Dictionary<KeyCode, 행동> KeyDownAction;
     Dictionary<KeyCode, 행동> KeyUpAction;
-
 
     private void Awake()
     {
@@ -54,8 +57,14 @@ public class PlayerController : MonoBehaviour
         KeyUpAction[KeyCode.RightArrow] = RunRight;
 
         state = new Dictionary<PlayerState, bool>();
-        state[PlayerState.RUN] = false;
+        
+
+        state[PlayerState.RIGHTRUN] = false;
+        state[PlayerState.LEFTRUN] = false;
         state[PlayerState.JUMP] = false;
+
+
+
     }
 
 
@@ -68,15 +77,16 @@ public class PlayerController : MonoBehaviour
         bodyCollider = GetComponent<BoxCollider2D>();
         weaponCollider = GetComponent<CapsuleCollider2D>();
     }
- 
+
     // Update is called once per frame
     void Update()
     {
         InputHandle();
-
-
+ 
         transform.Translate(moveForce * Time.deltaTime);
-        
+
+    
+
         if (IsGrounded() && state[PlayerState.JUMP])
         {
             state[PlayerState.JUMP] = false;
@@ -86,36 +96,32 @@ public class PlayerController : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.tag == "Enemy")
+        if (collision.tag == "Enemy")
         {
-            
-            
+
+
         }
     }
 
-    /// <summary>
-    /// ////////////////////////////////////////////////////////////////////////////////////////
-    /// </summary>
-
     private void InputHandle()
     {
-       if(Input.GetKeyDown(KeyCode.Space))
-       {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
             KeyDownAction[KeyCode.Space](true);
-       }
-       if (Input.GetKeyDown(KeyCode.LeftArrow))
-       {
-           KeyDownAction[KeyCode.LeftArrow](true);
-       }
-       if (Input.GetKeyDown(KeyCode.RightArrow))
-       {
-           KeyDownAction[KeyCode.RightArrow](true);
-       }
+        }
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            KeyDownAction[KeyCode.LeftArrow](true);
+        }
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            KeyDownAction[KeyCode.RightArrow](true);
+        }
 
 
 
 
-       if(Input.GetKeyUp(KeyCode.RightArrow))
+        if (Input.GetKeyUp(KeyCode.RightArrow))
         {
             KeyUpAction[KeyCode.RightArrow](false);
         }
@@ -134,7 +140,7 @@ public class PlayerController : MonoBehaviour
         {
             Vector2 jumpForce = new Vector2(0, speed.y);
             rigidbody.AddForce(jumpForce, ForceMode2D.Impulse);
-         
+
             state[PlayerState.JUMP] = true;
             animator.SetBool("isJump", state[PlayerState.JUMP]);
         }
@@ -147,16 +153,19 @@ public class PlayerController : MonoBehaviour
             spriteRenderer.flipX = true;
             animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
 
-            state[PlayerState.RUN] = true;
+            state[PlayerState.LEFTRUN] = true;
         }
         else
         {
-            moveForce = new Vector2(0, 0);
-            animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
-
-            state[PlayerState.RUN] = false;
+            if (!state[PlayerState.RIGHTRUN])
+            {
+                moveForce = new Vector2(0, 0);
+                animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+            }
+            state[PlayerState.LEFTRUN] = false;
         }
     }
+
     void RunRight(bool isDown)
     {
         if (isDown)
@@ -165,14 +174,16 @@ public class PlayerController : MonoBehaviour
             spriteRenderer.flipX = false;
             animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
 
-            state[PlayerState.RUN] = true;
+            state[PlayerState.RIGHTRUN] = true;
         }
         else
         {
-            moveForce = new Vector2(0, 0);
-            animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
-
-            state[PlayerState.RUN] = false;
+            if (!state[PlayerState.LEFTRUN])
+            {
+                moveForce = new Vector2(0, 0);
+                animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+            }
+            state[PlayerState.RIGHTRUN] = false;
         }
     }
 
