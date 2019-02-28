@@ -8,11 +8,10 @@ using UnityEngine;
 enum PlayerState
 {
     JUMP,
-    RUN,
-    IDLE
+    RUN
 }
 
-delegate void Action();
+
 delegate void 행동(bool isDown);
 
 public class PlayerController : MonoBehaviour
@@ -21,25 +20,24 @@ public class PlayerController : MonoBehaviour
 
 
     new Rigidbody2D rigidbody;
-    new BoxCollider2D collider;
+    new BoxCollider2D bodyCollider;
+    new CapsuleCollider2D weaponCollider;
+
     SpriteRenderer spriteRenderer;
     Animator animator;
-
     Vector2 moveForce;
 
     //레이어
     public LayerMask groundLayer;
 
     //플레이어 상태
-    PlayerState state = PlayerState.IDLE;
+    Dictionary<PlayerState, bool> state;
     //이동
     Vector2 moveDirection;
 
     Dictionary<KeyCode, 행동> KeyDownAction;
     Dictionary<KeyCode, 행동> KeyUpAction;
 
-    //Dictionary<string, Action> KeyDownAction;
-    //Dictionary<KeyCode, Action> KeyUpAction;
 
     private void Awake()
     {
@@ -55,6 +53,9 @@ public class PlayerController : MonoBehaviour
         KeyUpAction[KeyCode.LeftArrow] = RunLeft;
         KeyUpAction[KeyCode.RightArrow] = RunRight;
 
+        state = new Dictionary<PlayerState, bool>();
+        state[PlayerState.RUN] = false;
+        state[PlayerState.JUMP] = false;
     }
 
 
@@ -64,7 +65,8 @@ public class PlayerController : MonoBehaviour
         rigidbody = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
-        collider = GetComponent<BoxCollider2D>();
+        bodyCollider = GetComponent<BoxCollider2D>();
+        weaponCollider = GetComponent<CapsuleCollider2D>();
     }
  
     // Update is called once per frame
@@ -74,7 +76,26 @@ public class PlayerController : MonoBehaviour
 
 
         transform.Translate(moveForce * Time.deltaTime);
+        
+        if (IsGrounded() && state[PlayerState.JUMP])
+        {
+            state[PlayerState.JUMP] = false;
+            animator.SetBool("isJump", state[PlayerState.JUMP]);
+        }
     }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if(collision.tag == "Enemy")
+        {
+            
+            
+        }
+    }
+
+    /// <summary>
+    /// ////////////////////////////////////////////////////////////////////////////////////////
+    /// </summary>
 
     private void InputHandle()
     {
@@ -91,6 +112,9 @@ public class PlayerController : MonoBehaviour
            KeyDownAction[KeyCode.RightArrow](true);
        }
 
+
+
+
        if(Input.GetKeyUp(KeyCode.RightArrow))
         {
             KeyUpAction[KeyCode.RightArrow](false);
@@ -106,11 +130,14 @@ public class PlayerController : MonoBehaviour
 
     void Jump(bool isDown)
     {
-        Vector2 jumpForce = new Vector2(0, speed.y);
-        rigidbody.AddForce(jumpForce, ForceMode2D.Impulse);
-        state = PlayerState.JUMP;
-        animator.SetBool("isJump", true);
-
+        if (!state[PlayerState.JUMP])
+        {
+            Vector2 jumpForce = new Vector2(0, speed.y);
+            rigidbody.AddForce(jumpForce, ForceMode2D.Impulse);
+         
+            state[PlayerState.JUMP] = true;
+            animator.SetBool("isJump", state[PlayerState.JUMP]);
+        }
     }
     void RunLeft(bool isDown)
     {
@@ -119,11 +146,15 @@ public class PlayerController : MonoBehaviour
             moveForce = new Vector2(-speed.x, 0);
             spriteRenderer.flipX = true;
             animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+
+            state[PlayerState.RUN] = true;
         }
         else
         {
             moveForce = new Vector2(0, 0);
             animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+
+            state[PlayerState.RUN] = false;
         }
     }
     void RunRight(bool isDown)
@@ -133,11 +164,15 @@ public class PlayerController : MonoBehaviour
             moveForce = new Vector2(speed.x, 0);
             spriteRenderer.flipX = false;
             animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+
+            state[PlayerState.RUN] = true;
         }
         else
         {
             moveForce = new Vector2(0, 0);
             animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+
+            state[PlayerState.RUN] = false;
         }
     }
 
@@ -145,6 +180,6 @@ public class PlayerController : MonoBehaviour
 
     bool IsGrounded()
     {
-        return collider.IsTouchingLayers(groundLayer)&&rigidbody.velocity.y<=0;
+        return bodyCollider.IsTouchingLayers(groundLayer)&&rigidbody.velocity.y<=0;
     }
 }
