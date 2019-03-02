@@ -9,7 +9,9 @@ enum PlayerState
 {
     JUMP,
     LEFTRUN,
-    RIGHTRUN
+    RIGHTRUN,
+    GROUNDATTACK,
+    AIRATTACK
 }
 
 
@@ -21,8 +23,8 @@ public class PlayerController : MonoBehaviour
 
 
     new Rigidbody2D rigidbody;
-    new BoxCollider2D bodyCollider;
-    new CapsuleCollider2D weaponCollider;
+    BoxCollider2D bodyCollider;
+    CapsuleCollider2D weaponCollider;
 
     SpriteRenderer spriteRenderer;
     Animator animator;
@@ -31,14 +33,17 @@ public class PlayerController : MonoBehaviour
     //레이어
     public LayerMask groundLayer;
 
+    //데미지 관련 변수들
+    public float hp;
+    public int damage;
+    public float knockbackAmount;
+
     //플레이어 상태
     Dictionary<PlayerState, bool> state;
 
    
 
-    //이동
-    Vector2 moveDirection;
-
+    //INPUT
     Dictionary<KeyCode, 행동> KeyDownAction;
     Dictionary<KeyCode, 행동> KeyUpAction;
 
@@ -56,14 +61,17 @@ public class PlayerController : MonoBehaviour
         KeyUpAction[KeyCode.LeftArrow] = RunLeft;
         KeyUpAction[KeyCode.RightArrow] = RunRight;
 
+
+
+
         state = new Dictionary<PlayerState, bool>();
         
 
         state[PlayerState.RIGHTRUN] = false;
         state[PlayerState.LEFTRUN] = false;
         state[PlayerState.JUMP] = false;
-
-
+        state[PlayerState.GROUNDATTACK] = false;
+        state[PlayerState.AIRATTACK] = false;
 
     }
 
@@ -85,8 +93,6 @@ public class PlayerController : MonoBehaviour
  
         transform.Translate(moveForce * Time.deltaTime);
 
-    
-
         if (IsGrounded() && state[PlayerState.JUMP])
         {
             state[PlayerState.JUMP] = false;
@@ -94,52 +100,43 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.tag == "Enemy")
+        if (collision.collider.tag == "Enemy")
         {
-
-
+            var player = collision.collider.GetComponent<EnemyController>();
+            player.GetDamaged(damage, transform.position);
         }
     }
 
     private void InputHandle()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            KeyDownAction[KeyCode.Space](true);
-        }
-        if (Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            KeyDownAction[KeyCode.LeftArrow](true);
-        }
-        if (Input.GetKeyDown(KeyCode.RightArrow))
-        {
+        //이동은 GetAxis를 이용해서 처리
+        float moveInput = Input.GetAxisRaw("Horizontal");
+        if (moveInput > 0)
             KeyDownAction[KeyCode.RightArrow](true);
-        }
+        else if(moveInput<0)
+            KeyDownAction[KeyCode.LeftArrow](true);
 
 
-
-
-        if (Input.GetKeyUp(KeyCode.RightArrow))
+        foreach (var data in KeyDownAction)
         {
-            KeyUpAction[KeyCode.RightArrow](false);
+            if (Input.GetKeyUp(data.Key))
+                KeyDownAction[data.Key](true);
         }
-        if (Input.GetKeyUp(KeyCode.LeftArrow))
+
+        foreach (var data in KeyUpAction)
         {
-            KeyUpAction[KeyCode.LeftArrow](false);
+           if(Input.GetKeyUp(data.Key))
+              KeyUpAction[data.Key](false);
         }
-
-
-
     }
 
     void Jump(bool isDown)
     {
         if (!state[PlayerState.JUMP])
         {
-            Vector2 jumpForce = new Vector2(0, speed.y);
-            rigidbody.AddForce(jumpForce, ForceMode2D.Impulse);
+            rigidbody.AddForce(new Vector2(0,speed.y), ForceMode2D.Impulse);
 
             state[PlayerState.JUMP] = true;
             animator.SetBool("isJump", state[PlayerState.JUMP]);
@@ -149,19 +146,17 @@ public class PlayerController : MonoBehaviour
     {
         if (isDown)
         {
-            moveForce = new Vector2(-speed.x, 0);
+            moveForce.x = -speed.x;
             spriteRenderer.flipX = true;
-            animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+            animator.SetBool("isRun",true);
 
             state[PlayerState.LEFTRUN] = true;
         }
         else
         {
-            if (!state[PlayerState.RIGHTRUN])
-            {
-                moveForce = new Vector2(0, 0);
-                animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
-            }
+            moveForce.x = 0;
+            animator.SetBool("isRun", false);
+
             state[PlayerState.LEFTRUN] = false;
         }
     }
@@ -170,27 +165,32 @@ public class PlayerController : MonoBehaviour
     {
         if (isDown)
         {
-            moveForce = new Vector2(speed.x, 0);
+            moveForce.x = speed.x;
             spriteRenderer.flipX = false;
-            animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
+            animator.SetBool("isRun", true);
 
             state[PlayerState.RIGHTRUN] = true;
         }
         else
         {
-            if (!state[PlayerState.LEFTRUN])
-            {
-                moveForce = new Vector2(0, 0);
-                animator.SetFloat("runSpeed", Mathf.Abs(moveForce.x));
-            }
+            moveForce.x = 0;
+            animator.SetBool("isRun", false);
+          
             state[PlayerState.RIGHTRUN] = false;
         }
     }
 
 
-
+    //땅에 있는지 확인.
     bool IsGrounded()
     {
         return bodyCollider.IsTouchingLayers(groundLayer)&&rigidbody.velocity.y<=0;
+    }
+
+    //상호작용 함수들
+    public void GetDamaged(int damage,Vector3 position)
+    {
+        rigidbody.AddForce((transform.position - position).normalized * knockbackAmount, ForceMode2D.Impulse);
+        hp -= damage;
     }
 }
