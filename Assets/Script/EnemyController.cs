@@ -1,14 +1,16 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class EnemyController : MonoBehaviour
 {
-    //데미지 관련 함수들
-    public float hp;
+    //데미지 관련 변수들
+    public float maxHp;
+    float currentHp;
     public int damage;
     public float knockbackAmount;
-
+    public Slider slider;
 
     //물리
     Rigidbody2D rigidbody;
@@ -16,6 +18,8 @@ public class EnemyController : MonoBehaviour
     void Start()
     {
         rigidbody = GetComponent<Rigidbody2D>();
+        currentHp = maxHp;
+        slider.value = slider.maxValue;
     }
 
     // Update is called once per frame
@@ -37,6 +41,7 @@ public class EnemyController : MonoBehaviour
     public void GetDamaged(int damage, Vector3 position)
     {
         rigidbody.AddForce((transform.position - position).normalized * knockbackAmount, ForceMode2D.Impulse);
-        hp -= damage;
+        currentHp -= damage;
+        slider.value = currentHp / maxHp;
     }
 }

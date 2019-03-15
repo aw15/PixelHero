@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-
+using UnityEngine.UI;
 
 
 enum PlayerState
@@ -33,14 +33,16 @@ public class PlayerController : MonoBehaviour
     public LayerMask groundLayer;
 
     //데미지 관련 변수들
-    public float hp;
+    public float maxHp;
+    float currentHp;
     public int damage;
     public float knockbackAmount;
 
     //플레이어 상태
     Dictionary<PlayerState, bool> state;
 
-   
+    //GUI
+    public Slider slider;
 
     //INPUT
     Dictionary<KeyCode, 행동> KeyDownAction;
@@ -48,18 +50,17 @@ public class PlayerController : MonoBehaviour
 
     private void Awake()
     {
+        currentHp = maxHp;
+        slider.value = slider.maxValue;
 
-        KeyDownAction = new Dictionary<KeyCode, 행동>();
+       KeyDownAction = new Dictionary<KeyCode, 행동>();
         KeyUpAction = new Dictionary<KeyCode, 행동>();
 
         KeyDownAction[KeyCode.Space] = Jump;
         KeyDownAction[KeyCode.Q] = BasicGroundAttack;
 
-
-
-
         state = new Dictionary<PlayerState, bool>();
-        
+
 
         state[PlayerState.RUN] = false;
         state[PlayerState.JUMP] = false;
@@ -83,7 +84,7 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
         InputHandle();
-        
+
 
         if (IsGrounded() && state[PlayerState.JUMP])
         {
@@ -91,10 +92,10 @@ public class PlayerController : MonoBehaviour
             animator.SetBool("isJump", state[PlayerState.JUMP]);
         }
 
-        if(animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack") && !AnimatorIsPlaying())
+        if (animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack") && !AnimatorIsPlaying())
         {
             state[PlayerState.BASIC_GROUNDATTACK] = false;
-            animator.SetBool("isBasicAttack", state[PlayerState.BASIC_GROUNDATTACK]);
+            animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);
         }
 
     }
@@ -103,8 +104,8 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.collider.tag == "Enemy")
         {
-            var player = collision.collider.GetComponent<EnemyController>();
-            player.GetDamaged(damage, transform.position);
+            var enemy = collision.collider.GetComponent<EnemyController>();
+            enemy.GetDamaged(damage, transform.position);
         }
     }
 
@@ -112,8 +113,6 @@ public class PlayerController : MonoBehaviour
     {
 
         MoveInput();
-
-
 
         foreach (var data in KeyDownAction)
         {
@@ -123,8 +122,8 @@ public class PlayerController : MonoBehaviour
 
         foreach (var data in KeyUpAction)
         {
-           if(Input.GetKeyUp(data.Key))
-              KeyUpAction[data.Key](false);
+            if (Input.GetKeyUp(data.Key))
+                KeyUpAction[data.Key](false);
         }
     }
 
@@ -132,7 +131,7 @@ public class PlayerController : MonoBehaviour
     {
         if (!state[PlayerState.JUMP] && isDown)
         {
-            rigidbody.AddForce(new Vector2(0,speed.y), ForceMode2D.Impulse);
+            rigidbody.AddForce(new Vector2(0, speed.y), ForceMode2D.Impulse);
 
             state[PlayerState.JUMP] = true;
             animator.SetBool("isJump", state[PlayerState.JUMP]);
@@ -144,8 +143,8 @@ public class PlayerController : MonoBehaviour
         if (!state[PlayerState.JUMP] && isDown)
         {
             state[PlayerState.BASIC_GROUNDATTACK] = true;
-            animator.SetBool("isBasicAttack", state[PlayerState.BASIC_GROUNDATTACK]);
-         
+            animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);
+
         }
     }
 
@@ -177,8 +176,6 @@ public class PlayerController : MonoBehaviour
 
             state[PlayerState.RUN] = false;
         }
-
-
         transform.Translate(moveForce * Time.deltaTime);
     }
 
@@ -187,11 +184,10 @@ public class PlayerController : MonoBehaviour
     {
         return bodyCollider.IsTouchingLayers(groundLayer)&&rigidbody.velocity.y<=0;
     }
+
     //애니메이션이 플레이 중인지 확인.
     bool AnimatorIsPlaying()
     {
-        //return animator.GetCurrentAnimatorStateInfo(0).normalizedTime<0.95;
-
         return animator.GetCurrentAnimatorStateInfo(0).length >
        animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
     }
@@ -201,6 +197,7 @@ public class PlayerController : MonoBehaviour
     public void GetDamaged(int damage,Vector3 position)
     {
         rigidbody.AddForce((transform.position - position).normalized * knockbackAmount, ForceMode2D.Impulse);
-        hp -= damage;
+        currentHp -= damage;
+        slider.value = currentHp / maxHp;
     }
 }
