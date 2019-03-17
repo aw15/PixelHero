@@ -14,12 +14,15 @@ enum PlayerState
 }
 
 
-delegate void 행동(bool isDown);
+delegate void KeyAction(bool isDown);
+delegate void StateAction();
 
 public class PlayerController : MonoBehaviour
 {
-    public Vector2 speed;
-
+    Vector2 speed;
+    public float basicWalkSpeed;
+    public float JumpSpeed;
+    public float attackWalkSpeed;
 
     new Rigidbody2D rigidbody;
     BoxCollider2D bodyCollider;
@@ -40,27 +43,42 @@ public class PlayerController : MonoBehaviour
 
     //플레이어 상태
     Dictionary<PlayerState, bool> state;
-
+    Dictionary<PlayerState, StateAction> stateAction;
     //GUI
     public Slider slider;
 
     //INPUT
-    Dictionary<KeyCode, 행동> KeyDownAction;
-    Dictionary<KeyCode, 행동> KeyUpAction;
+    Dictionary<KeyCode, KeyAction> KeyDownAction;
+    Dictionary<KeyCode, KeyAction> KeyUpAction;
+
+    //콤보 공격
+    float comboDelay = 0f;
+    public float maxComboDelay;
+    int comboCount = 0;
+
+
+    //공격
+    public bool attackAvailable = true;
 
     private void Awake()
     {
         currentHp = maxHp;
         slider.value = slider.maxValue;
 
-       KeyDownAction = new Dictionary<KeyCode, 행동>();
-        KeyUpAction = new Dictionary<KeyCode, 행동>();
+        speed.x = basicWalkSpeed;
+        speed.y = JumpSpeed;
+
+
+       KeyDownAction = new Dictionary<KeyCode, KeyAction>();
+        KeyUpAction = new Dictionary<KeyCode, KeyAction>();
+        
+
 
         KeyDownAction[KeyCode.Space] = Jump;
         KeyDownAction[KeyCode.Q] = BasicGroundAttack;
 
         state = new Dictionary<PlayerState, bool>();
-
+        stateAction = new Dictionary<PlayerState, StateAction>();
 
         state[PlayerState.RUN] = false;
         state[PlayerState.JUMP] = false;
@@ -77,37 +95,29 @@ public class PlayerController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         bodyCollider = GetComponent<BoxCollider2D>();
-        weaponCollider = GetComponent<CapsuleCollider2D>();
+        weaponCollider = GetComponentInChildren<CapsuleCollider2D>();
+        
     }
 
     // Update is called once per frame
     void Update()
     {
+        StateHandle();
+
         InputHandle();
-
-
-        if (IsGrounded() && state[PlayerState.JUMP])
-        {
-            state[PlayerState.JUMP] = false;
-            animator.SetBool("isJump", state[PlayerState.JUMP]);
-        }
-
-        if (animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack") && !AnimatorIsPlaying())
-        {
-            state[PlayerState.BASIC_GROUNDATTACK] = false;
-            animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);
-        }
-
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
+    
+    private void OnTriggerStay2D(Collider2D collision)
     {
-        if (collision.collider.tag == "Enemy")
+        if (collision.tag == "Enemy" && state[PlayerState.BASIC_GROUNDATTACK] && attackAvailable)
         {
-            var enemy = collision.collider.GetComponent<EnemyController>();
+            var enemy = collision.GetComponent<EnemyController>();
             enemy.GetDamaged(damage, transform.position);
+            attackAvailable = false;
         }
     }
+    
 
     private void InputHandle()
     {
@@ -115,6 +125,7 @@ public class PlayerController : MonoBehaviour
         MoveInput();
 
         foreach (var data in KeyDownAction)
+
         {
             if (Input.GetKeyUp(data.Key))
                 KeyDownAction[data.Key](true);
@@ -126,6 +137,47 @@ public class PlayerController : MonoBehaviour
                 KeyUpAction[data.Key](false);
         }
     }
+    
+    private void StateHandle()
+    {
+        if (state[PlayerState.BASIC_GROUNDATTACK])
+        {
+  
+            comboDelay += Time.deltaTime;
+            if (!AnimatorIsPlaying() && comboDelay>=maxComboDelay)
+            {
+                speed.x = basicWalkSpeed;
+                attackAvailable = true;
+
+                state[PlayerState.BASIC_GROUNDATTACK] = false;
+                animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);
+                comboCount = 0;
+                animator.SetInteger("ComboCount", 0);
+            }
+            else if(!AnimatorIsPlaying()&&comboDelay<maxComboDelay)
+            {
+               if(animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack1"))
+                {
+                    comboCount = 1;
+                    animator.SetInteger("ComboCount", 1);
+                }
+               else if (animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack2"))
+                {
+                    comboCount = 2;
+                    animator.SetInteger("ComboCount", 2);
+                }
+            }
+        }
+        if(state[PlayerState.JUMP])
+        {
+            if(IsGrounded())
+            {
+                state[PlayerState.JUMP] = false;
+                animator.SetBool("isJump", state[PlayerState.JUMP]);
+            }
+        }
+    }
+
 
     void Jump(bool isDown)
     {
@@ -142,9 +194,13 @@ public class PlayerController : MonoBehaviour
     {
         if (!state[PlayerState.JUMP] && isDown)
         {
+            speed.x = attackWalkSpeed;
+
+            if(comboCount<2)
+                comboDelay = 0.0f;
+
             state[PlayerState.BASIC_GROUNDATTACK] = true;
             animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);
-
         }
     }
 
