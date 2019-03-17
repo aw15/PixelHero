@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Enemy
   - Skeleton
+  - Weapon
   layers:
   - Default
   - TransparentFX

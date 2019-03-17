@@ -17,6 +17,7 @@ enum PlayerState
 delegate void KeyAction(bool isDown);
 delegate void StateAction();
 
+
 public class PlayerController : MonoBehaviour
 {
     Vector2 speed;
@@ -27,6 +28,7 @@ public class PlayerController : MonoBehaviour
     new Rigidbody2D rigidbody;
     BoxCollider2D bodyCollider;
     CapsuleCollider2D weaponCollider;
+
 
     SpriteRenderer spriteRenderer;
     Animator animator;
@@ -57,8 +59,11 @@ public class PlayerController : MonoBehaviour
     int comboCount = 0;
 
 
+
     //공격
     public bool attackAvailable = true;
+    public float attackInterval = 0.0f;
+    float attackTimer;
 
     private void Awake()
     {
@@ -69,9 +74,9 @@ public class PlayerController : MonoBehaviour
         speed.y = JumpSpeed;
 
 
-       KeyDownAction = new Dictionary<KeyCode, KeyAction>();
+        KeyDownAction = new Dictionary<KeyCode, KeyAction>();
         KeyUpAction = new Dictionary<KeyCode, KeyAction>();
-        
+
 
 
         KeyDownAction[KeyCode.Space] = Jump;
@@ -86,7 +91,7 @@ public class PlayerController : MonoBehaviour
         state[PlayerState.AIRATTACK] = false;
 
     }
-
+    
 
     // Start is called before the first frame update
     void Start()
@@ -96,17 +101,19 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<Animator>();
         bodyCollider = GetComponent<BoxCollider2D>();
         weaponCollider = GetComponentInChildren<CapsuleCollider2D>();
-        
     }
 
     // Update is called once per frame
     void Update()
     {
+        attackTimer += Time.deltaTime;
+
+
         StateHandle();
 
         InputHandle();
+        
     }
-
     
     private void OnTriggerStay2D(Collider2D collision)
     {
@@ -146,25 +153,26 @@ public class PlayerController : MonoBehaviour
             comboDelay += Time.deltaTime;
             if (!AnimatorIsPlaying() && comboDelay>=maxComboDelay)
             {
-                speed.x = basicWalkSpeed;
-                attackAvailable = true;
+                speed.x = basicWalkSpeed;//걷는 속도로 바꿈
+                attackAvailable = true;//공격가능한 상태로바꿈
+                attackTimer = 0.0f; // 바로 공격못하게 타이머를 0으로
 
-                state[PlayerState.BASIC_GROUNDATTACK] = false;
-                animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);
-                comboCount = 0;
-                animator.SetInteger("ComboCount", 0);
+                state[PlayerState.BASIC_GROUNDATTACK] = false;//상태 바꿈
+                animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);//에니메이터 상태 바꿈
+                comboCount = 0;//콤보카운트도 0으로
+                animator.SetInteger("ComboCount", comboCount);//애니메이터 콤보 변수 바꿈
             }
-            else if(!AnimatorIsPlaying()&&comboDelay<maxComboDelay)
+            else if(!AnimatorIsPlaying() &&comboDelay<maxComboDelay)
             {
                if(animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack1"))
                 {
                     comboCount = 1;
-                    animator.SetInteger("ComboCount", 1);
+                    animator.SetInteger("ComboCount", comboCount);
                 }
                else if (animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack2"))
                 {
                     comboCount = 2;
-                    animator.SetInteger("ComboCount", 2);
+                    animator.SetInteger("ComboCount", comboCount);
                 }
             }
         }
@@ -192,7 +200,7 @@ public class PlayerController : MonoBehaviour
 
     void BasicGroundAttack(bool isDown)
     {
-        if (!state[PlayerState.JUMP] && isDown)
+        if (!state[PlayerState.JUMP] && isDown && attackTimer>attackInterval)
         {
             speed.x = attackWalkSpeed;
 
@@ -214,6 +222,7 @@ public class PlayerController : MonoBehaviour
             moveForce.x = speed.x;
             spriteRenderer.flipX = false;
             animator.SetBool("isRun", true);
+            weaponCollider.transform.rotation = Quaternion.Euler(0,0, 0);
 
             state[PlayerState.RUN] = true;
         }
@@ -222,6 +231,8 @@ public class PlayerController : MonoBehaviour
             moveForce.x = -speed.x;
             spriteRenderer.flipX = true;
             animator.SetBool("isRun", true);
+            weaponCollider.transform.rotation = Quaternion.Euler(0, 180, 0);
+            
 
             state[PlayerState.RUN] = true;
         }
@@ -244,6 +255,7 @@ public class PlayerController : MonoBehaviour
     //애니메이션이 플레이 중인지 확인.
     bool AnimatorIsPlaying()
     {
+        
         return animator.GetCurrentAnimatorStateInfo(0).length >
        animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
     }
