@@ -33,9 +33,7 @@ public class PlayerController : MonoBehaviour
     SpriteRenderer spriteRenderer;
     Animator animator;
     Vector2 moveForce;
-
-    //레이어
-    public LayerMask groundLayer;
+    
 
     //데미지 관련 변수들
     public float maxHp;
@@ -54,8 +52,8 @@ public class PlayerController : MonoBehaviour
     Dictionary<KeyCode, KeyAction> KeyUpAction;
 
     //콤보 공격
-    float comboDelay = 0f;
-    public float maxComboDelay;
+    float comboTime = 0f;
+    public float comboDelay;
     int comboCount = 0;
 
 
@@ -89,7 +87,6 @@ public class PlayerController : MonoBehaviour
         state[PlayerState.JUMP] = false;
         state[PlayerState.BASIC_GROUNDATTACK] = false;
         state[PlayerState.AIRATTACK] = false;
-
     }
     
 
@@ -100,9 +97,7 @@ public class PlayerController : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         bodyCollider = GetComponent<BoxCollider2D>();
-        weaponCollider = GetComponentInChildren<CapsuleCollider2D>();
-
-        
+        weaponCollider = GetComponentInChildren<CapsuleCollider2D>(); 
     }
 
     // Update is called once per frame
@@ -110,11 +105,9 @@ public class PlayerController : MonoBehaviour
     {
         attackTimer += Time.deltaTime;
 
-
         StateHandle();
 
         InputHandle();
-        
     }
     
     private void OnTriggerStay2D(Collider2D collision)
@@ -152,19 +145,19 @@ public class PlayerController : MonoBehaviour
         if (state[PlayerState.BASIC_GROUNDATTACK])
         {
   
-            comboDelay += Time.deltaTime;
-            if (!AnimatorIsPlaying() && comboDelay>=maxComboDelay)
+            comboTime += Time.deltaTime;
+            if (!AnimatorIsPlaying() && comboTime>=comboDelay)
             {
                 speed.x = basicWalkSpeed;//걷는 속도로 바꿈
                 attackAvailable = true;//공격가능한 상태로바꿈
                 attackTimer = 0.0f; // 바로 공격못하게 타이머를 0으로
 
                 state[PlayerState.BASIC_GROUNDATTACK] = false;//상태 바꿈
-                animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);//에니메이터 상태 바꿈
+                animator.SetBool("isBasicGroundAttack", false);//에니메이터 상태 바꿈
                 comboCount = 0;//콤보카운트도 0으로
-                animator.SetInteger("ComboCount", comboCount);//애니메이터 콤보 변수 바꿈
+                animator.SetInteger("ComboCount", 0);//애니메이터 콤보 변수 바꿈
             }
-            else if(!AnimatorIsPlaying() &&comboDelay<maxComboDelay)
+            else if(!AnimatorIsPlaying() &&comboTime<comboDelay)
             {
                if(animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack1"))
                 {
@@ -207,10 +200,10 @@ public class PlayerController : MonoBehaviour
             speed.x = attackWalkSpeed;
 
             if(comboCount<2)
-                comboDelay = 0.0f;
+                comboTime = 0.0f;
 
             state[PlayerState.BASIC_GROUNDATTACK] = true;
-            animator.SetBool("isBasicGroundAttack", state[PlayerState.BASIC_GROUNDATTACK]);
+            animator.SetBool("isBasicGroundAttack", true);
         }
     }
 
@@ -251,7 +244,9 @@ public class PlayerController : MonoBehaviour
     //땅에 있는지 확인.
     bool IsGrounded()
     {
-        return bodyCollider.IsTouchingLayers(groundLayer)&&rigidbody.velocity.y<=0;
+        var contact = new ContactFilter2D();
+        
+        return bodyCollider.IsTouching(contact.NoFilter()) && Mathf.Abs(rigidbody.velocity.y) <= 0.001;
     }
 
     //애니메이션이 플레이 중인지 확인.

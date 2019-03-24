@@ -571,7 +571,7 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 10
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 1
@@ -594,16 +594,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   basicWalkSpeed: 2
-  JumpSpeed: 7
+  JumpSpeed: 50
   attackWalkSpeed: 0.3
-  groundLayer:
-    serializedVersion: 2
-    m_Bits: 256
   maxHp: 100
   damage: 10
   knockbackAmount: 0
   slider: {fileID: 1787245386}
-  maxComboDelay: 0.5
+  comboDelay: 0.3
   attackAvailable: 1
   attackInterval: 0.5
 --- !u!1 &49960319
@@ -1076,7 +1073,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 519420028}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.5726237, y: 1.2437665, z: -10}
+  m_LocalPosition: {x: -2.6765413, y: 1.2437665, z: -10}
   m_LocalScale: {x: 1.025, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -1178,8 +1175,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 582591110}
   m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
-  m_LocalPosition: {x: 1.95, y: 2.42, z: -0.28014645}
-  m_LocalScale: {x: 3, y: 3, z: 3}
+  m_LocalPosition: {x: 1.85, y: 2.42, z: -0.28014645}
+  m_LocalScale: {x: 3, y: 2.9999998, z: 3}
   m_Children:
   - {fileID: 994881086}
   m_Father: {fileID: 0}
@@ -1198,7 +1195,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: -0.09410839, y: -0.019907482}
+  m_Offset: {x: -0.024374112, y: -0.03242384}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -1209,7 +1206,7 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 0.31178322, y: 0.39503336}
+  m_Size: {x: 0.3725771, y: 0.39145717}
   m_EdgeRadius: 0
 --- !u!50 &582591115
 Rigidbody2D:
@@ -1249,9 +1246,9 @@ MonoBehaviour:
   knockbackAmount: 1.4
   slider: {fileID: 1739688200}
   player: {fileID: 31926007}
-  detectDistance: 2
+  detectDistance: 5
+  attackDistance: 1
   walkSpeed: 0.5
-  AttackWalkSpeed: 0
   attackInterval: 0.5
 --- !u!1 &583644233
 GameObject:
@@ -1524,8 +1521,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -0.1206, y: 0.0194}
-  m_SizeDelta: {x: 1.7237, y: 1.485}
+  m_AnchoredPosition: {x: -0.0232, y: 0.0194}
+  m_SizeDelta: {x: 1.1395, y: 1.485}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &994881087
 MonoBehaviour:
@@ -1638,7 +1635,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1319388928}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.5726237, y: 1.2437665, z: -10}
+  m_LocalPosition: {x: -2.6765413, y: 1.2437665, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 924204385}
@@ -1831,7 +1828,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 0.899, y: -0.272}
+  m_AnchoredPosition: {x: 0.593, y: -0.26}
   m_SizeDelta: {x: 1.0748, y: 0.1277}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1781543943
@@ -2201,6 +2198,11 @@ PrefabInstance:
       propertyPath: m_BodyType
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6022375810663838403, guid: 013efdeffa2e1b744a00f8663aa71842,
+        type: 3}
+      propertyPath: m_Mass
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 6022375810663838402, guid: 013efdeffa2e1b744a00f8663aa71842,
         type: 3}
       propertyPath: maxHp
@@ -2219,7 +2221,7 @@ PrefabInstance:
     - target: {fileID: 6022375810663838402, guid: 013efdeffa2e1b744a00f8663aa71842,
         type: 3}
       propertyPath: JumpSpeed
-      value: 7
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 6022375810663838402, guid: 013efdeffa2e1b744a00f8663aa71842,
         type: 3}
@@ -2235,6 +2237,11 @@ PrefabInstance:
         type: 3}
       propertyPath: knockbackAmount
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6022375810663838402, guid: 013efdeffa2e1b744a00f8663aa71842,
+        type: 3}
+      propertyPath: comboDelay
+      value: 0.3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 013efdeffa2e1b744a00f8663aa71842, type: 3}
