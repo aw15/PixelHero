@@ -101,6 +101,8 @@ public class PlayerController : MonoBehaviour
         animator = GetComponent<Animator>();
         bodyCollider = GetComponent<BoxCollider2D>();
         weaponCollider = GetComponentInChildren<CapsuleCollider2D>();
+
+        
     }
 
     // Update is called once per frame

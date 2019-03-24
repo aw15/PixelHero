@@ -3,6 +3,13 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+enum EnemyState
+{
+    WALK,
+    ATTACK
+}
+
+
 public class EnemyController : MonoBehaviour
 {
     //데미지 관련 변수들
@@ -13,13 +20,26 @@ public class EnemyController : MonoBehaviour
     public Slider slider;
 
     //물리
-    Rigidbody2D rigidbody;
-    public float walkSpeed;
+    new Rigidbody2D rigidbody;
+
 
     //그래픽
-    SpriteRenderer renderer;
+    new SpriteRenderer renderer;
     //AI
     public GameObject player;
+
+    //상태
+    Dictionary<EnemyState, bool> state;
+    public float detectDistance;
+
+    //속도
+    public float walkSpeed;
+    public float AttackWalkSpeed;
+
+
+    //시간
+    float attackTimer;
+    public float attackInterval;
 
     // Start is called before the first frame update
     void Start()
@@ -29,22 +49,49 @@ public class EnemyController : MonoBehaviour
         currentHp = maxHp;
         slider.value = slider.maxValue;
 
+        state = new Dictionary<EnemyState, bool>();
+        state[EnemyState.ATTACK] = false;
+        state[EnemyState.WALK] = false;
+
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (player.transform.position.x <  transform.position.x)
+        attackTimer += Time.deltaTime;
+
+        HandleState();
+        AI();
+ 
+    }
+
+
+    void AI()
+    {
+        if(Mathf.Abs(player.transform.position.x - transform.position.x)<detectDistance)
+            state[EnemyState.WALK] = true;
+        else
+            state[EnemyState.WALK] = false;
+    }
+
+    void HandleState()
+    {
+        if (state[EnemyState.WALK])
         {
-            transform.Translate(new Vector3(walkSpeed * Time.deltaTime,0));
-            renderer.flipX = false;
-        }
-        else if (player.transform.position.x > transform.position.x)
-        {
-            transform.Translate(new Vector3(-walkSpeed * Time.deltaTime,0));
-            renderer.flipX = true;
+            if (player.transform.position.x < transform.position.x)
+            {
+                transform.Translate(new Vector3(walkSpeed * Time.deltaTime, 0));
+                renderer.flipX = false;
+            }
+            else if (player.transform.position.x > transform.position.x)
+            {
+                transform.Translate(new Vector3(-walkSpeed * Time.deltaTime, 0));
+                renderer.flipX = true;
+            }
         }
     }
+
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
