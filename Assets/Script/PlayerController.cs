@@ -52,9 +52,8 @@ public class PlayerController : MonoBehaviour
     Dictionary<KeyCode, KeyAction> KeyUpAction;
 
     //콤보 공격
-    float comboTime = 0f;
+    float comboTimer = 0f;
     public float comboDelay;
-    int comboCount = 0;
 
 
 
@@ -142,34 +141,21 @@ public class PlayerController : MonoBehaviour
     
     private void StateHandle()
     {
+
         if (state[PlayerState.BASIC_GROUNDATTACK])
         {
-  
-            comboTime += Time.deltaTime;
-            if (!AnimatorIsPlaying() && comboTime>=comboDelay)
+            comboTimer += Time.deltaTime;
+            if (comboTimer>comboDelay)
             {
-                speed.x = basicWalkSpeed;//걷는 속도로 바꿈
-                attackAvailable = true;//공격가능한 상태로바꿈
-                attackTimer = 0.0f; // 바로 공격못하게 타이머를 0으로
-
+                animator.SetTrigger("resetTrigger");
                 state[PlayerState.BASIC_GROUNDATTACK] = false;//상태 바꿈
-                animator.SetBool("isBasicGroundAttack", false);//에니메이터 상태 바꿈
-                comboCount = 0;//콤보카운트도 0으로
-                animator.SetInteger("ComboCount", 0);//애니메이터 콤보 변수 바꿈
+                comboTimer = 0.0f;
             }
-            else if(!AnimatorIsPlaying() &&comboTime<comboDelay)
-            {
-               if(animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack1"))
-                {
-                    comboCount = 1;
-                    animator.SetInteger("ComboCount", comboCount);
-                }
-               else if (animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack2"))
-                {
-                    comboCount = 2;
-                    animator.SetInteger("ComboCount", comboCount);
-                }
-            }
+        }
+        if(!state[PlayerState.BASIC_GROUNDATTACK])
+        {
+            animator.SetTrigger("resetTrigger");
+            animator.SetBool("isFirstAttack", false);
         }
         if(state[PlayerState.JUMP])
         {
@@ -178,6 +164,10 @@ public class PlayerController : MonoBehaviour
                 state[PlayerState.JUMP] = false;
                 animator.SetBool("isJump", state[PlayerState.JUMP]);
             }
+        }
+        if(state[PlayerState.RUN])
+        {
+            speed.x = basicWalkSpeed;
         }
     }
 
@@ -195,15 +185,14 @@ public class PlayerController : MonoBehaviour
 
     void BasicGroundAttack(bool isDown)
     {
-        if (!state[PlayerState.JUMP] && isDown && attackTimer>attackInterval)
+        if (!state[PlayerState.JUMP] && isDown)
         {
-            speed.x = attackWalkSpeed;
+            animator.SetTrigger("attackTrigger");
+            if (animator.GetCurrentAnimatorStateInfo(0).IsName("BasicGroundAttack3"))
+                comboTimer = 0.0f;
 
-            if(comboCount<2)
-                comboTime = 0.0f;
 
             state[PlayerState.BASIC_GROUNDATTACK] = true;
-            animator.SetBool("isBasicGroundAttack", true);
         }
     }
 
@@ -253,7 +242,7 @@ public class PlayerController : MonoBehaviour
     bool AnimatorIsPlaying()
     {
         
-        return animator.GetCurrentAnimatorStateInfo(0).length >
+        return animator.GetCurrentAnimatorClipInfo(0).Length >
        animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
     }
 

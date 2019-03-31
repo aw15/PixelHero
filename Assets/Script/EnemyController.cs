@@ -6,7 +6,8 @@ using UnityEngine.UI;
 enum EnemyState
 {
     WALK,
-    ATTACK
+    ATTACK,
+    DEAD
 }
 
 
@@ -21,14 +22,16 @@ public class EnemyController : MonoBehaviour
 
     //물리
     new Rigidbody2D rigidbody;
+    CircleCollider2D weaponCollider;
 
     // 애니메이션
-    new Animator animator;
+    Animator animator;
 
     //그래픽
     new SpriteRenderer renderer;
     //AI
     public GameObject player;
+    PlayerController playerController;
 
     //상태
     Dictionary<EnemyState, bool> state;
@@ -41,7 +44,11 @@ public class EnemyController : MonoBehaviour
 
     //시간
     float attackTimer;
-    public float attackInterval;
+
+
+    //소리
+    public string effectSound;
+    
 
     // Start is called before the first frame update
     void Start()
@@ -49,6 +56,9 @@ public class EnemyController : MonoBehaviour
         rigidbody = GetComponent<Rigidbody2D>();
         renderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
+        weaponCollider = GetComponent<CircleCollider2D>();
+        playerController = player.GetComponent<PlayerController>();
+
 
         currentHp = maxHp;
         slider.value = slider.maxValue;
@@ -56,13 +66,12 @@ public class EnemyController : MonoBehaviour
         state = new Dictionary<EnemyState, bool>();
         state[EnemyState.ATTACK] = false;
         state[EnemyState.WALK] = false;
+        state[EnemyState.DEAD] = false;
     }
 
     // Update is called once per frame
     void Update()
     {
-        attackTimer += Time.deltaTime;
-
         HandleState();
         AI();
     }
@@ -71,7 +80,7 @@ public class EnemyController : MonoBehaviour
     void AI()
     {
         float distance = Mathf.Abs(player.transform.position.x - transform.position.x);
-        if (distance < detectDistance && distance >= attackDistance)
+        if (distance < detectDistance && !state[EnemyState.ATTACK])
         {
             state[EnemyState.WALK] = true;
             animator.SetBool("isWalk", true);
@@ -82,29 +91,40 @@ public class EnemyController : MonoBehaviour
             animator.SetBool("isWalk", false);
         }
 
-
-        if(distance < attackDistance)
+        if(currentHp<=0)
         {
-            state[EnemyState.ATTACK] = true;
-            animator.SetBool("isAttack", true);
-        }
-        else
-        {
-            state[EnemyState.ATTACK] = false;
-            animator.SetBool("isAttack", false);
+            state[EnemyState.DEAD] = true;
+            animator.SetBool("isDead", true);
         }
     }
 
     void HandleState()
     {
-        if (state[EnemyState.WALK])
+        if (state[EnemyState.WALK] && !state[EnemyState.ATTACK] &&!state[EnemyState.DEAD])
         {
             speed = walkSpeed;
             Move();
-        }
-        if(state[EnemyState.ATTACK])
-        {
 
+        }
+        if(state[EnemyState.ATTACK] && !state[EnemyState.DEAD])
+        {
+            attackTimer += Time.deltaTime;
+   
+
+            if (attackTimer >= animator.GetCurrentAnimatorStateInfo(0).length/2)
+            {
+                attackTimer = -animator.GetCurrentAnimatorStateInfo(0).length / 2;
+                playerController.GetDamaged(damage, transform.position);             
+            }          
+        }
+
+        if(state[EnemyState.DEAD])
+        {
+            if(animator.GetCurrentAnimatorClipInfo(0).Length <= animator.GetCurrentAnimatorStateInfo(0).normalizedTime)
+            {
+                GameManager.instance.OnNotify(gameObject, ActionEnum.DEAD);
+                Destroy(gameObject);
+            }
         }
     }
 
@@ -115,21 +135,34 @@ public class EnemyController : MonoBehaviour
         {
             transform.Translate(new Vector3(speed * Time.deltaTime, 0));
             renderer.flipX = false;
+            weaponCollider.offset = new Vector2(Mathf.Abs(weaponCollider.offset.x),0);
         }
         else if (player.transform.position.x > transform.position.x)
         {
             transform.Translate(new Vector3(-speed * Time.deltaTime, 0));
             renderer.flipX = true;
+            weaponCollider.offset = new Vector2(-Mathf.Abs(weaponCollider.offset.x), 0);
         }
     }
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.collider.tag == "Player")
+        if (collision.tag == "Player")
         {
-            var player = collision.collider.GetComponent<PlayerController>();
-            player.GetDamaged(damage, transform.position);
+            state[EnemyState.ATTACK] = true;
+            animator.SetBool("isAttack", true);
         }
     }
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.tag == "Player")
+        {
+            attackTimer = 0.0f;
+            state[EnemyState.ATTACK] = false;
+            animator.SetBool("isAttack", false);
+        }
+
+    }
+
 
     //상호작용 함수들
     public void GetDamaged(int damage, Vector3 position)
