@@ -37,7 +37,7 @@ public class PlayerController : MonoBehaviour
 
     //데미지 관련 변수들
     public float maxHp;
-    float currentHp;
+    public float currentHp;
     public int damage;
     public float knockbackAmount;
 
@@ -61,6 +61,12 @@ public class PlayerController : MonoBehaviour
     public bool attackAvailable = true;
     public float attackInterval = 0.0f;
     float attackTimer;
+
+    //아이템
+    public float potionHealAmount = 10.0f;
+    public int coinAmount = 10;
+    int coinCount = 0;
+
 
     private void Awake()
     {
@@ -118,7 +124,36 @@ public class PlayerController : MonoBehaviour
             attackAvailable = false;
         }
     }
-    
+
+    public void GrabItem(GameObject obj)
+    {
+        var category = obj.GetComponent<ItemScript>().category;
+        switch(category)
+        {
+            case ItemCategoryEnum.HEALTH:
+                if (currentHp == maxHp)
+                    break;
+                else if (currentHp + potionHealAmount > maxHp)
+                {
+                    currentHp = maxHp;
+                    Destroy(obj);
+                }
+                else
+                {
+                    currentHp = currentHp + potionHealAmount;
+                    Destroy(obj);
+                }
+                slider.value = currentHp / maxHp;
+                break;
+            case ItemCategoryEnum.COIN:
+                coinCount += coinAmount;
+                Destroy(obj);
+                break;
+        }
+   
+    }
+
+
 
     private void InputHandle()
     {

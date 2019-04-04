@@ -50,7 +50,7 @@ public class SoundManager : MonoBehaviour
     }
 
 
-    public void PlayPlayerEffectSound(string name)
+    public  void PlayPlayerEffectSound(string name)
     {
         playerSpeaker.clip = audioList[name];
         playerSpeaker.Play();

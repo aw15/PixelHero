@@ -2,10 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SpriteAnimation : MonoBehaviour
+public enum ItemCategoryEnum
+{
+    HEALTH,
+    COIN
+}
+
+
+public class ItemScript : MonoBehaviour
 {
     SpriteRenderer renderer;
     Color color;
+
+    public ItemCategoryEnum category;
     // Start is called before the first frame update
     void Start()
     {
@@ -22,6 +31,14 @@ public class SpriteAnimation : MonoBehaviour
         if(color.a>1)
         {
             color.a = 0;
+        }
+    }
+    
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+       if(collision.GetType() == typeof(BoxCollider2D))
+        {
+            collision.SendMessage("GrabItem", gameObject, SendMessageOptions.DontRequireReceiver);
         }
     }
 }
