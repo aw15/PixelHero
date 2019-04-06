@@ -59,7 +59,6 @@ public class EnemyController : MonoBehaviour
         weaponCollider = GetComponent<CircleCollider2D>();
         playerController = player.GetComponent<PlayerController>();
 
-
         currentHp = maxHp;
         slider.value = slider.maxValue;
 

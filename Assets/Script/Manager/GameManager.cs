@@ -5,7 +5,8 @@ using System;
 
 public enum ActionEnum
 {
-    DEAD
+    DEAD,
+    ATTACK
 };
 
 
@@ -17,14 +18,17 @@ public struct ItemStruct
 }
 
 
+
 public class GameManager : MonoBehaviour
 {
+
     [SerializeField]
     public ItemStruct[] items;
 
     public static GameManager instance =null;
 
     public GameObject itemPrefab;
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -40,6 +44,8 @@ public class GameManager : MonoBehaviour
     {
         if(obj.tag == "Enemy" && action == ActionEnum.DEAD)
         {
+            
+
             int index = UnityEngine.Random.Range(0,items.Length);
             var item = Instantiate(itemPrefab, obj.transform.position, Quaternion.identity);
             var itemSpite = item.GetComponent<SpriteRenderer>();
