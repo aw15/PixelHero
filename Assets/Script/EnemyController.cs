@@ -45,9 +45,7 @@ public class EnemyController : MonoBehaviour
     //시간
     float attackTimer;
 
-
-    //소리
-    public string effectSound;
+    
     
 
     // Start is called before the first frame update
