@@ -10,7 +10,8 @@ enum PlayerState
     JUMP,
     RUN,
     BASIC_GROUNDATTACK,
-    AIRATTACK
+    AIRATTACK,
+    DEAD
 }
 
 
@@ -92,6 +93,7 @@ public class PlayerController : MonoBehaviour
         state[PlayerState.JUMP] = false;
         state[PlayerState.BASIC_GROUNDATTACK] = false;
         state[PlayerState.AIRATTACK] = false;
+        state[PlayerState.DEAD] = false;
     }
     
 
@@ -108,11 +110,14 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        attackTimer += Time.deltaTime;
+        if (!state[PlayerState.DEAD])
+        {
+            attackTimer += Time.deltaTime;
 
-        StateHandle();
+            StateHandle();
 
-        InputHandle();
+            InputHandle();
+        }
     }
     
     private void OnTriggerStay2D(Collider2D collision)
@@ -288,5 +293,11 @@ public class PlayerController : MonoBehaviour
         rigidbody.AddForce((transform.position - position).normalized * knockbackAmount, ForceMode2D.Impulse);
         currentHp -= damage;
         slider.value = currentHp / maxHp;
+
+        if(currentHp<=0)
+        {
+            animator.SetBool("isDead", true);
+            state[PlayerState.DEAD] = true;
+        }
     }
 }

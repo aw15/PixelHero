@@ -23,7 +23,7 @@ public class EnemyController : MonoBehaviour
     //물리
     new Rigidbody2D rigidbody;
     CircleCollider2D weaponCollider;
-
+    BoxCollider2D bodyCollider;
     // 애니메이션
     Animator animator;
 
@@ -51,11 +51,16 @@ public class EnemyController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        player = GameObject.FindGameObjectWithTag("Player");
+
         rigidbody = GetComponent<Rigidbody2D>();
         renderer = GetComponent<SpriteRenderer>();
         animator = GetComponent<Animator>();
         weaponCollider = GetComponent<CircleCollider2D>();
+        bodyCollider = GetComponent<BoxCollider2D>(); 
         playerController = player.GetComponent<PlayerController>();
+
+
 
         currentHp = maxHp;
         slider.value = slider.maxValue;
@@ -77,7 +82,7 @@ public class EnemyController : MonoBehaviour
     void AI()
     {
         float distance = Mathf.Abs(player.transform.position.x - transform.position.x);
-        if (distance < detectDistance && !state[EnemyState.ATTACK])
+        if (distance > 0.01 && distance < detectDistance && !state[EnemyState.ATTACK])
         {
             state[EnemyState.WALK] = true;
             animator.SetBool("isWalk", true);
@@ -106,13 +111,15 @@ public class EnemyController : MonoBehaviour
         if(state[EnemyState.ATTACK] && !state[EnemyState.DEAD])
         {
             attackTimer += Time.deltaTime;
-   
 
-            if (attackTimer >= animator.GetCurrentAnimatorStateInfo(0).length/2)
+            Debug.Log(animator.GetCurrentAnimatorStateInfo(0).length);
+            
+
+            if (attackTimer >= animator.GetCurrentAnimatorStateInfo(0).length)
             {
-                attackTimer = -animator.GetCurrentAnimatorStateInfo(0).length / 2;
-                playerController.GetDamaged(damage, transform.position);             
-            }          
+                attackTimer = 0.0f;
+                playerController.GetDamaged(damage, transform.position); 
+            }
         }
 
         if(state[EnemyState.DEAD])
@@ -132,19 +139,23 @@ public class EnemyController : MonoBehaviour
         {
             transform.Translate(new Vector3(speed * Time.deltaTime, 0));
             renderer.flipX = false;
-            weaponCollider.offset = new Vector2(Mathf.Abs(weaponCollider.offset.x),0);
+            weaponCollider.offset = new Vector2(-Mathf.Abs(weaponCollider.offset.x),0);
+            bodyCollider.offset = new Vector2(-Mathf.Abs(bodyCollider.offset.x), 0);
         }
         else if (player.transform.position.x > transform.position.x)
         {
             transform.Translate(new Vector3(-speed * Time.deltaTime, 0));
             renderer.flipX = true;
-            weaponCollider.offset = new Vector2(-Mathf.Abs(weaponCollider.offset.x), 0);
+            weaponCollider.offset = new Vector2(Mathf.Abs(weaponCollider.offset.x), 0);
+            bodyCollider.offset = new Vector2(Mathf.Abs(bodyCollider.offset.x), 0);
+            
         }
     }
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.tag == "Player")
         {
+            attackTimer = 0.0f;
             state[EnemyState.ATTACK] = true;
             animator.SetBool("isAttack", true);
         }
