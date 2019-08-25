@@ -111,8 +111,7 @@ public class EnemyController : MonoBehaviour
         if(state[EnemyState.ATTACK] && !state[EnemyState.DEAD])
         {
             attackTimer += Time.deltaTime;
-
-            Debug.Log(animator.GetCurrentAnimatorStateInfo(0).length);
+            
             
 
             if (attackTimer >= animator.GetCurrentAnimatorStateInfo(0).length)

@@ -40,8 +40,6 @@ public class PlayerController : MonoBehaviour
     public float maxHp;
     public float currentHp;
     public int damage;
-    public float knockbackAmount;
-
     //플레이어 상태
     Dictionary<PlayerState, bool> state;
     Dictionary<PlayerState, StateAction> stateAction;
@@ -166,9 +164,8 @@ public class PlayerController : MonoBehaviour
         MoveInput();
 
         foreach (var data in KeyDownAction)
-
         {
-            if (Input.GetKeyUp(data.Key))
+            if (Input.GetKeyDown(data.Key))
                 KeyDownAction[data.Key](true);
         }
 
@@ -288,9 +285,15 @@ public class PlayerController : MonoBehaviour
 
 
     //상호작용 함수들
-    public void GetDamaged(int damage,Vector3 position)
+    public void GetDamaged(float damage,Vector3 position,float knockbackAmount = 0.0f)
     {
-        rigidbody.AddForce((transform.position - position).normalized * knockbackAmount, ForceMode2D.Impulse);
+        //transform.Translate(-moveForce* knockbackAmount * Time.deltaTime);
+
+        //if (moveForce.x < 0)
+        //    rigidbody.AddForce(new Vector2(1.0f, 0.0f) * knockbackAmount, ForceMode2D.Impulse);
+        //else
+        //    rigidbody.AddForce(new Vector2(-1.0f, 0.0f) * knockbackAmount, ForceMode2D.Impulse);
+
         currentHp -= damage;
         slider.value = currentHp / maxHp;
 
